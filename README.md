@@ -66,7 +66,7 @@ If the library is located locally on your machine, add the path to the consumer'
 
 ```toml
 [dependencies]
-qjson = 0.3.0
+quat_json = 0.3.0
 ```
 
 #### 2. Usage in Rust Code (`main.rs`)
