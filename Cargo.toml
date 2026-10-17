@@ -6,7 +6,7 @@ authors = ["Strale <strahinjastojanovic826@gmail.com>"]
 description = "A high-performance quaternary JSON processing and compression library with universal FFI support"
 readme = "README.md"
 license = "AGPL-3.0-or-later"
-repository = "https://github.com/yourusername/qjson"
+repository = "https://github.com/strahinjastojanovic826-code/quat_json"
 keywords = ["json", "quaternary", "compression", "parser", "ffi"]
 categories = ["encoding", "parser-implementations", "data-structures"]
 
