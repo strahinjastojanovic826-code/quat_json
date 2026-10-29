@@ -1,4 +1,4 @@
-use crate::quat::{pack_quats, unpack_quats, QuatBuffer};
+use crate::quat::{pack_quats, QuatBuffer};
 use crate::ast::{traverse_json_value, QuatTokenType};
 use serde_json::Value;
 
@@ -36,10 +36,23 @@ pub fn encode_json(json_str: &str) -> Result<QuatBuffer, AdvancedCodecError> {
 }
 
 pub fn decode_quats(data: &[u8], total_quats: usize) -> Result<Vec<QuatTokenType>, AdvancedCodecError> {
-    if data.is_empty() && total_quats > 0 {
+    // Validate buffer length against expected total_quats (4 quats per byte)
+    let required_bytes = (total_quats + 3) / 4;
+    if data.len() < required_bytes {
         return Err(AdvancedCodecError::InvalidBufferData);
     }
-    let quats = unpack_quats(data, total_quats);
-    let tokens = quats.into_iter().map(QuatTokenType::from_quat).collect();
+
+    let mut tokens = Vec::with_capacity(total_quats);
+    let iter = crate::quat::QuatIter::new(data, total_quats);
+
+    for quat in iter {
+        let token_type = QuatTokenType::from_quat(quat);
+        tokens.push(token_type);
+    }
+
+    if tokens.len() != total_quats {
+        return Err(AdvancedCodecError::InvalidBufferData);
+    }
+
     Ok(tokens)
 }

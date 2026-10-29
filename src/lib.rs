@@ -179,4 +179,21 @@ fn test_01_quat_enum_mapping() {
         let unpacked_quats = unpack_quats(&buf.data, buf.total_quats);
         assert_eq!(unpacked_quats.len(), buf.total_quats);
     }
+    #[test]
+    fn test_roundtrip_json() {
+        let json_data = r#"{"key": [1, 2, 3]}"#;
+        let buffer = encode_json(json_data).unwrap();
+        
+        let decoded = decode_quats(&buffer.data, buffer.total_quats);
+        assert!(decoded.is_ok());
+    }
+
+    #[test]
+    fn test_corrupted_buffer_handling() {
+        // Send fewer bytes than required (10 quats require 3 bytes, we send only 1)
+        let corrupted_bytes = vec![0xFF]; 
+        let result = decode_quats(&corrupted_bytes, 10);
+        assert!(result.is_err());
+    }
+    
 }

@@ -22,6 +22,7 @@ impl Quat {
 
 #[derive(Debug)]
 pub struct QuatBuffer {
+    pub version: u8,
     pub data: Vec<u8>,
     pub total_quats: usize,
 }
@@ -39,7 +40,7 @@ pub fn pack_quats(quats: &[Quat]) -> QuatBuffer {
         data.push(byte);
     }
 
-    QuatBuffer { data, total_quats }
+    QuatBuffer { version: 1, data, total_quats }
 }
 
 #[inline]
@@ -60,4 +61,46 @@ pub fn unpack_quats(bytes: &[u8], total_quats: usize) -> Vec<Quat> {
         }
     }
     quats
+}
+
+pub struct QuatIter<'a> {
+    bytes: &'a [u8],
+    total_quats: usize,
+    current_index: usize,
+}
+
+impl<'a> QuatIter<'a> {
+    #[inline]
+    pub fn new(bytes: &'a [u8], total_quats: usize) -> Self {
+        Self {
+            bytes,
+            total_quats,
+            current_index: 0,
+        }
+    }
+}
+
+impl<'a> Iterator for QuatIter<'a> {
+    type Item = Quat;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current_index >= self.total_quats {
+            return None;
+        }
+
+        let byte_idx = self.current_index / 4;
+        let quat_offset = self.current_index % 4;
+
+        if byte_idx >= self.bytes.len() {
+            return None;
+        }
+
+        let byte = self.bytes[byte_idx];
+        let val = (byte >> (quat_offset * 2)) & 0b11;
+        
+        let quat = Quat::from_u8(val)?;
+        self.current_index += 1;
+        Some(quat)
+    }
 }

@@ -69,12 +69,12 @@ pub extern "C" fn qjson_advanced_encode(json_ptr: *const c_char) -> AdvancedQJso
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn qjson_advanced_free(data: *mut u8, size: usize) {
-    let _ = catch_unwind(|| {
-        if !data.is_null() && size > 0 {
-            unsafe {
-                let _ = Vec::from_raw_parts(data, size, size);
-            }
-        }
-    });
+pub extern "C" fn qjson_advanced_free(data: *mut u8, size: usize, capacity: usize) {
+    if data.is_null() || capacity == 0 {
+        return;
+    }
+    unsafe {
+        // Safely reconstruct the vector and let Rust drop it out of scope
+        let _ = Vec::from_raw_parts(data, size, capacity);
+    }
 }
