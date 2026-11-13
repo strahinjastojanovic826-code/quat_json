@@ -104,3 +104,34 @@ impl<'a> Iterator for QuatIter<'a> {
         Some(quat)
     }
 }
+
+impl QuatBuffer {
+#[inline]
+    pub fn fast_unpack(&self) -> Vec<Quat> {
+        let mut quats = Vec::with_capacity(self.total_quats);
+        
+        for &byte in &self.data {
+            // Unrolled bit extraction for 4 quats per byte (quaternary logic: 2 bits each)
+            let q0 = (byte >> 0) & 0b11;
+            let q1 = (byte >> 2) & 0b11;
+            let q2 = (byte >> 4) & 0b11;
+            let q3 = (byte >> 6) & 0b11;
+
+            if quats.len() < self.total_quats {
+                if let Some(q) = Quat::from_u8(q0) { quats.push(q); }
+            }
+            if quats.len() < self.total_quats {
+                if let Some(q) = Quat::from_u8(q1) { quats.push(q); }
+            }
+            if quats.len() < self.total_quats {
+                if let Some(q) = Quat::from_u8(q2) { quats.push(q); }
+            }
+            if quats.len() < self.total_quats {
+                if let Some(q) = Quat::from_u8(q3) { quats.push(q); }
+            }
+        }
+        
+        quats
+    }
+
+}

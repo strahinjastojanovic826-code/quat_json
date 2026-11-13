@@ -6,11 +6,67 @@ Designed for enterprise workloads, it features robust Abstract Syntax Tree (AST)
 
 ---
 
+## Features
+
+* **Quaternary Data Types (`Quat` & `QuatLogicState`)**
+  * **Core Quaternary Enum (`Quat`)**: Represents 4-valued states (`Q0`, `Q1`, `Q2`, `Q3`) packed into a compact `#[repr(u8)]` layout[cite: 5].
+  * **4-Valued Logic (`QuatLogicState`)**: Implements conservative minimum logic operations including Quaternary `NOT`, `AND`, and `OR` for multi-valued logic evaluations[cite: 9, 10].
+
+* **Bit-Packed Storage (`QuatBuffer`)**
+  * **Ultra-Compact Compression**: Packs 4 quaternary values into a single byte (`u8`) using 2 bits per value via bitwise shift (`<<` and `>>`) and masking operations[cite: 6, 8].
+  * **Serialization & Deserialization**: Efficient `pack_quats` and `unpack_quats` methods to convert between raw byte buffers and quaternary tokens[cite: 6, 7].
+  * **Fast Unrolled Decoding**: Optimized unrolled bit-extraction routines for high-speed buffer unpacking[cite: 8].
+
+* **JSON AST Integration & Parsing (`ast.rs` & `codec.rs`)**
+  * **JSON to Quaternary Mapping**: Traverses standard `serde_json::Value` trees and maps object boundaries, array boundaries, separators, and scalar values into quaternary streams[cite: 1, 10].
+  * **Advanced Codec Error Handling**: Custom `AdvancedCodecError` type with robust formatting, syntax error catching, and buffer integrity validation[cite: 3, 10].
+
+* **Enterprise Safety & Robustness (`safety.rs`)**
+  * **Memory Guardrails**: Implements `RobustnessValidator` to protect against buffer underflows, corrupted length declarations, and illogical allocations[cite: 3].
+  * **Allocation Limits**: Enforces a strict maximum allowed allocation threshold (`MAX_ALLOWED_QUATS`) to prevent Denial of Service (DoS) attacks via memory exhaustion[cite: 3].
+  * **Thread Safety Checks**: Compile-time helpers (`assert_send_sync`) ensuring core structures meet enterprise multithreading standards (`Send` + `Sync`)[cite: 3].
+
+* **Foreign Function Interface (FFI) (`ffi.rs`)**
+  * **C-Compatible API**: Exposes safe C-bindings (`#[no_mangle]`, `extern "C"`) allowing seamless integration with C and other host languages[cite: 11, 12].
+  * **Panic Safety**: Wraps FFI operations with `std::panic::catch_unwind` to intercept catastrophic Rust panics and safely return error codes across the FFI boundary[cite: 11, 12].
+  * **Manual Memory Management**: Safe raw pointer reconstruction and memory deallocation utilities (`qjson_advanced_free`) to prevent memory leaks[cite: 12].
+
+* **Scalar Compression (`compression.rs`)**
+  * **Direct Scalar Processing**: `ScalarCompressor` utility for compressing slices of small integer scalars (`0` to `3`) directly into compact `QuatBuffer` instances without full JSON parsing overhead[cite: 13].
+
+---
+
 ### Core Modules:
 - **`quat.rs`**: Handles low-level bit operations, packing 4 quats (`Q0`, `Q1`, `Q2`, `Q3`) into an 8-bit byte with inline optimizations.
 - **`ast.rs`**: Uses `serde_json` to traverse JSON syntax trees and map structural boundaries (objects, arrays, separators, values) into quaternary states.
 - **`codec.rs`**: Manages high-level encoding and decoding pipelines alongside custom `std::error::Error` implementations.
 - **`ffi.rs`**: Exposes a safe C ABI boundary protected by `std::panic::catch_unwind` to prevent undefined behavior across language borders.
+
+---
+
+## Benchmark
+
+| Test Name | Category / Description | Execution Time | Status |
+| :--- | :--- | :--- | :--- |
+| **test_01_quat_enum_mapping** | Quat Enum Mapping & Parsing | $4.1\,\mu\text{s}$[cite: 6] | **OK**[cite: 6] |
+| **test_02_basic_quat_packing** | Basic Quat Packing into Byte | $31.2\,\mu\text{s}$[cite: 6] | **OK**[cite: 6] |
+| **test_03_basic_quat_unpacking** | Basic Quat Unpacking | $4.3\,\mu\text{s}$[cite: 6] | **OK**[cite: 6] |
+| **test_04_empty_json_object** | Empty JSON Object Encoding | $33.6\,\mu\text{s}$[cite: 6] | **OK**[cite: 6] |
+| **test_05_simple_json_array** | Simple JSON Array Processing | $17.4\,\mu\text{s}$[cite: 6] | **OK**[cite: 6] |
+| **test_06_key_value_json_object** | Key-Value JSON Object Encoding | $33.8\,\mu\text{s}$[cite: 6] | **OK**[cite: 6] |
+| **test_07_malformed_json_error** | Malformed JSON Error Handling | $19.1\,\mu\text{s}$[cite: 6] | **OK**[cite: 6] |
+| **test_08_empty_input_error** | Empty Input Error Handling | $700\,\text{ns}$[cite: 6] | **OK**[cite: 6] |
+| **test_09_nested_objects_and_arrays** | Complex Nested Structures | $23.5\,\mu\text{s}$[cite: 6] | **OK**[cite: 6] |
+| **test_10_deeply_nested_json_stress** | Deep Nesting Stress Test (50 levels) | $295.2\,\mu\text{s}$[cite: 6] | **OK**[cite: 6] |
+| **test_11_massive_payload_memory_stress** | Massive Payload Memory Stress (5000+ elements) | $13.88\,\text{ms}$[cite: 6] | **OK**[cite: 6] |
+| **test_roundtrip_json** | JSON Roundtrip Serialization | $14.2\,\mu\text{s}$[cite: 6] | **OK**[cite: 6] |
+| **test_corrupted_buffer_handling** | Corrupted Buffer Validation | $500\,\text{ns}$[cite: 6] | **OK**[cite: 6] |
+| **test_fast_unpack_with_benchmark** | Fast Unpack Benchmark | $400\,\text{ns}$[cite: 6] | **OK**[cite: 6] |
+| **test_quaternary_logic_with_benchmark** | Quaternary Logic Operations | $200\,\text{ns}$[cite: 6] | **OK**[cite: 6] |
+| **test_query_engine_with_benchmark** | Query Engine Operations | $3.2\,\mu\text{s}$[cite: 6] | **OK**[cite: 6] |
+| **test_safety_and_robustness_with_benchmark** | Safety & Robustness Validation | $100\,\text{ns}$[cite: 6] | **OK**[cite: 6] |
+| **test_scalar_compression_with_benchmark** | Scalar Compression & Decompression | $4.3\,\mu\text{s}$[cite: 6] | **OK**[cite: 6] |
+| **test_stream_encoder_with_benchmark** | Stream Encoder Operations | $400\,\text{ns}$[cite: 6] | **OK**[cite: 6] |
 
 ---
 
@@ -66,7 +122,7 @@ If the library is located locally on your machine, add the path to the consumer'
 
 ```toml
 [dependencies]
-quat_json = 0.4.0
+quat_json = 0.5.0
 ```
 
 #### 2. Usage in Rust Code (`main.rs`)
@@ -97,6 +153,43 @@ fn main() {
             eprintln!("Failed to encode JSON: {}", e);
         }
     }
+}
+```
+
+### 💡 Advanced Usage in Rust Code (`main.rs`)
+
+If you want to use the advanced features of the library—such as direct scalar compression without JSON parsing[cite: 13] and 4-valued quaternary logic operations[cite: 9]—you can use the following example:
+
+```rust
+use quat_json::compression::ScalarCompressor;
+use quat_json::logic::QuatLogicState;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 1. Direct scalar compression (values 0 to 3) without full JSON overhead
+    let raw_scalars = vec![0, 1, 2, 3, 1, 0];
+    println!("Compressing raw scalar slice: {:?}", raw_scalars);
+
+    // Compress into a compact QuatBuffer
+    let buffer = ScalarCompressor::compress_scalars(&raw_scalars)?;
+    println!("Packed total quats: {}", buffer.total_quats);
+    println!("Packed bytes length: {}", buffer.data.len());
+
+    // Decompress back to scalars
+    let decompressed = ScalarCompressor::decompress_scalars(&buffer);
+    println!("Decompressed scalars: {:?}", decompressed);
+
+    // 2. Using 4-Valued Quaternary Logic (QuatLogicState)
+    let state_a = QuatLogicState::True;
+    let state_b = QuatLogicState::False;
+
+    // Perform conservative minimum logic operations
+    let and_result = QuatLogicState::quat_and(state_a, state_b);
+    let not_result = state_a.quat_not();
+
+    println!("Logic operation (True AND False): {:?}", and_result);
+    println!("Logic operation (NOT True): {:?}", not_result);
+
+    Ok(())
 }
 ```
 
