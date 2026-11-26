@@ -338,5 +338,53 @@ fn test_safety_and_robustness_with_benchmark() {
     assert!(validation_result.is_ok());
     println!("[BENCHMARK] Safety & Robustness Validation execution time: {:?}", duration);
 }
+
+#[test]
+    fn test_structural_validation_with_benchmark() {
+        let start = Instant::now();
+        let json_str = r#"{"user": {"id": 1, "tags": ["a", "b"]}}"#;
+        let buf = encode_json(json_str).unwrap();
+        let tokens = decode_quats(&buf.data, buf.total_quats).unwrap();
+        let depth = RobustnessValidator::validate_decoded_structure(&buf, &tokens);
+        let duration = start.elapsed();
+
+        assert!(depth.is_ok());
+        assert!(depth.unwrap() >= 2);
+        println!("[BENCHMARK] Structural validation execution time: {:?}", duration);
+    }
+
+    #[test]
+    fn test_query_container_navigation_with_benchmark() {
+        let start = Instant::now();
+        let json_str = r#"{"a": [1, 2], "b": {"x": 10}}"#;
+        let buf = encode_json(json_str).unwrap();
+        let tokens = decode_quats(&buf.data, buf.total_quats).unwrap();
+        let engine = QuatQueryEngine::new(&tokens);
+
+        let containers = engine.container_count();
+        let next_idx = engine.skip_container(0);
+        let tail = engine.slice_from(next_idx);
+        let duration = start.elapsed();
+
+        assert!(containers >= 2);
+        assert!(next_idx <= tokens.len());
+        assert_eq!(tail.len(), tokens.len() - next_idx);
+        println!("[BENCHMARK] Query container navigation execution time: {:?}", duration);
+    }
+
+    #[test]
+    fn test_ffi_capacity_and_free_result_with_benchmark() {
+        let start = Instant::now();
+        let c_json = std::ffi::CString::new(r#"{"ok": true, "items": [1, 2, 3]}"#).unwrap();
+        let mut res = crate::ffi::qjson_advanced_encode(c_json.as_ptr());
+        let has_data = !res.data.is_null() && res.size > 0 && res.capacity >= res.size && res.error_code == 0;
+        crate::ffi::qjson_advanced_free_result(&mut res);
+        let duration = start.elapsed();
+
+        assert!(has_data);
+        assert!(res.data.is_null());
+        assert_eq!(res.capacity, 0);
+        println!("[BENCHMARK] FFI capacity and free_result execution time: {:?}", duration);
+    }
     
 }

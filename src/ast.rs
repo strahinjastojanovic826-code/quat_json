@@ -52,3 +52,45 @@ pub fn traverse_json_value(val: &Value, quats: &mut Vec<Quat>) {
         }
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StructuralValidationError {
+    UnclosedContainer,
+    UnexpectedCloseOrOrder,
+    EmptyStream,
+}
+
+/// Validates structural balance of encoded `QuatTokenType` tokens and returns max nesting depth.
+pub fn validate_quat_structure(tokens: &[QuatTokenType]) -> Result<usize, StructuralValidationError> {
+    if tokens.is_empty() {
+        return Err(StructuralValidationError::EmptyStream);
+    }
+
+    let mut depth: usize = 0;
+    let mut max_depth: usize = 0;
+    let mut saw_root = false;
+
+    for &tok in tokens {
+        match tok {
+            QuatTokenType::ObjectStart | QuatTokenType::ArrayStart => {
+                saw_root = true;
+                depth += 1;
+                if depth > max_depth {
+                    max_depth = depth;
+                }
+            }
+            QuatTokenType::ValueNode => {
+                if !saw_root && depth == 0 {
+                    saw_root = true;
+                }
+            }
+            QuatTokenType::Separator => {
+                if depth == 0 {
+                    return Err(StructuralValidationError::UnexpectedCloseOrOrder);
+                }
+            }
+        }
+    }
+
+    Ok(max_depth)
+}

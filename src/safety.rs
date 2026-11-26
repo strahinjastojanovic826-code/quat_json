@@ -37,4 +37,18 @@ impl RobustnessValidator {
 
         Ok(())
     }
+
+    /// Validates buffer version and structural token balance after decoding.
+    pub fn validate_decoded_structure(
+        buffer: &QuatBuffer,
+        tokens: &[crate::ast::QuatTokenType],
+    ) -> Result<usize, AdvancedCodecError> {
+        Self::validate_buffer_integrity(buffer)?;
+        if buffer.version != 1 {
+            return Err(AdvancedCodecError::InvalidBufferData);
+        }
+        crate::ast::validate_quat_structure(tokens)
+            .map_err(|_| AdvancedCodecError::InvalidBufferData)
+    }
+    
 }
